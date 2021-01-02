@@ -227,6 +227,7 @@ async function loadIOSConfig(
   extConfig: ExternalConfig,
 ): Promise<IOSConfig> {
   const name = 'ios';
+  const scheme = extConfig.ios?.scheme ?? 'App';
   const podPath = determineCocoapodPath();
   const platformDir = extConfig.ios?.path ?? 'ios';
   const platformDirAbs = resolve(rootDir, platformDir);
@@ -237,6 +238,7 @@ async function loadIOSConfig(
 
   return {
     name,
+    scheme,
     minVersion: '12.0',
     platformDir,
     platformDirAbs,

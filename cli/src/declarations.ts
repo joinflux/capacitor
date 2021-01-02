@@ -176,6 +176,14 @@ export interface CapacitorConfig {
     path?: string;
 
     /**
+     * The Xcode scheme to use. (Often the same name as your app target.)
+     *
+     * @since 3.0.0
+     * @default App
+     */
+    scheme?: string;
+
+    /**
      * User agent of Capacitor Web View on iOS.
      *
      * Overrides global `overrideUserAgent` option.

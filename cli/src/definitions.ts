@@ -92,6 +92,7 @@ export interface AndroidConfig extends PlatformConfig {
 }
 
 export interface IOSConfig extends PlatformConfig {
+  readonly scheme: string;
   readonly cordovaPluginsDir: string;
   readonly cordovaPluginsDirAbs: string;
   readonly minVersion: string;
