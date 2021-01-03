@@ -1,6 +1,6 @@
 import { pathExists, readJSON } from '@ionic/utils-fs';
 import Debug from 'debug';
-import { dirname, join, resolve } from 'path';
+import { dirname, join, relative, resolve } from 'path';
 
 import c from './colors';
 import type {
@@ -234,9 +234,12 @@ async function loadIOSConfig(
   const platformDirAbs = resolve(rootDir, platformDir);
   const cordovaPluginsDir = 'capacitor-cordova-ios-plugins';
 
-  const nativeProjectDir = 'App';
-  const nativeTargetDir = `${nativeProjectDir}/App`;
-  const webDir = `${nativeProjectDir}/public`;
+  const workspaceDir = 'App';
+  const workspaceDirAbs = resolve(platformDirAbs, workspaceDir);
+  const workspace = 'App.xcworkspace';
+  const projectConfig = lazy(() =>
+    loadIOSProjectConfig(platformDirAbs, workspaceDirAbs, workspace, scheme),
+  );
 
   return {
     name,
@@ -246,14 +249,121 @@ async function loadIOSConfig(
     platformDirAbs,
     cordovaPluginsDir,
     cordovaPluginsDirAbs: resolve(platformDirAbs, cordovaPluginsDir),
-    nativeProjectDir: lazy(() => nativeProjectDir),
-    nativeProjectDirAbs: lazy(() => resolve(platformDirAbs, nativeProjectDir)),
-    nativeTargetDir: lazy(() => nativeTargetDir),
-    nativeTargetDirAbs: lazy(() => resolve(platformDirAbs, nativeTargetDir)),
-    webDir: lazy(() => webDir),
-    webDirAbs: lazy(() => resolve(platformDirAbs, webDir)),
+    nativeProjectDir: lazy(async () => (await projectConfig).nativeProjectDir),
+    nativeProjectDirAbs: lazy(
+      async () => (await projectConfig).nativeProjectDirAbs,
+    ),
+    nativeTargetDir: lazy(async () => (await projectConfig).nativeTargetDir),
+    nativeTargetDirAbs: lazy(
+      async () => (await projectConfig).nativeTargetDirAbs,
+    ),
+    webDir: lazy(async () => (await projectConfig).webDir),
+    webDirAbs: lazy(async () => (await projectConfig).webDirAbs),
     podPath,
   };
+}
+
+interface IOSProjectConfig {
+  nativeProjectDir: string;
+  nativeProjectDirAbs: string;
+  nativeTargetDir: string;
+  nativeTargetDirAbs: string;
+  webDir: string;
+  webDirAbs: string;
+}
+
+async function loadIOSProjectConfig(
+  platformDir: string,
+  workspaceDir: string,
+  workspace: string,
+  scheme: string,
+): Promise<IOSProjectConfig> {
+  const buildSettings = await loadBuildSettings(
+    workspaceDir,
+    workspace,
+    scheme,
+  );
+  const nativeProjectDirAbs = resolve(workspaceDir, buildSettings.projectDir);
+  const nativeTargetDirAbs = resolve(
+    workspaceDir,
+    dirname(buildSettings.infoPlistPath),
+  );
+  const webDirAbs = resolve(nativeProjectDirAbs, 'public');
+
+  return {
+    nativeProjectDir: relative(platformDir, nativeProjectDirAbs),
+    nativeProjectDirAbs,
+    nativeTargetDir: relative(platformDir, nativeTargetDirAbs),
+    nativeTargetDirAbs,
+    webDir: relative(platformDir, webDirAbs),
+    webDirAbs,
+  };
+}
+
+interface BuildSettings {
+  target: string;
+  projectDir: string;
+  infoPlistPath: string;
+  executable: string;
+}
+
+async function loadBuildSettings(
+  workspaceDir: string,
+  workspace: string,
+  scheme: string,
+): Promise<BuildSettings> {
+  const { runCommand } = await import('./util/subprocess');
+  const defaults: BuildSettings = {
+    target: 'App',
+    projectDir: '',
+    infoPlistPath: 'App/Info.plist',
+    executable: 'App.app',
+  };
+
+  try {
+    const result = await runCommand(
+      'xcodebuild',
+      ['-showBuildSettings', '-workspace', workspace, '-scheme', scheme],
+      { cwd: workspaceDir },
+    );
+    const settings = parseBuildSettings(result);
+    const target = settings['TARGET_NAME'] ?? defaults.target;
+
+    return {
+      target,
+      projectDir: relative(
+        workspaceDir,
+        resolve(workspaceDir, settings['PROJECT_DIR'] ?? defaults.projectDir),
+      ),
+      infoPlistPath: relative(
+        workspaceDir,
+        resolve(
+          workspaceDir,
+          settings['INFOPLIST_FILE'] ?? defaults.infoPlistPath,
+        ),
+      ),
+      executable: settings['EXECUTABLE_FOLDER_PATH'] ?? `${target}.app`,
+    };
+  } catch (e) {
+    debug(`Error loading iOS build settings: %O`, e);
+  }
+
+  return defaults;
+}
+
+function parseBuildSettings(
+  input: string,
+): { [key: string]: string | undefined } {
+  const o: { [key: string]: string | undefined } = {};
+  const re = /^\s+(\w+)\s=\s(.+)$/gm;
+  let result: RegExpExecArray | null;
+
+  while ((result = re.exec(input)) !== null) {
+    const [, key, value] = result;
+    o[key] = value;
+  }
+
+  return o;
 }
 
 async function loadWebConfig(
