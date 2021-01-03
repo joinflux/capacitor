@@ -283,6 +283,9 @@ async function loadIOSProjectConfig(
     workspace,
     scheme,
   );
+
+  debug('iOS build settings: %O', buildSettings);
+
   const nativeProjectDirAbs = resolve(workspaceDir, buildSettings.projectDir);
   const nativeTargetDirAbs = resolve(
     workspaceDir,
