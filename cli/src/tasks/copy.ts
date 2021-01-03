@@ -61,8 +61,8 @@ export async function copy(
     }
 
     if (platformName === config.ios.name) {
-      await copyWebDir(config, config.ios.webDirAbs);
-      await copyCapacitorConfig(config, config.ios.nativeTargetDirAbs);
+      await copyWebDir(config, await config.ios.webDirAbs);
+      await copyCapacitorConfig(config, await config.ios.nativeTargetDirAbs);
       const cordovaPlugins = await getCordovaPlugins(config, platformName);
       await handleCordovaPluginsJS(cordovaPlugins, config, platformName);
     } else if (platformName === config.android.name) {

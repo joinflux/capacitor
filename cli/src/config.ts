@@ -232,10 +232,11 @@ async function loadIOSConfig(
   const podPath = determineCocoapodPath();
   const platformDir = extConfig.ios?.path ?? 'ios';
   const platformDirAbs = resolve(rootDir, platformDir);
+  const cordovaPluginsDir = 'capacitor-cordova-ios-plugins';
+
   const nativeProjectDir = 'App';
   const nativeTargetDir = `${nativeProjectDir}/App`;
   const webDir = `${nativeProjectDir}/public`;
-  const cordovaPluginsDir = 'capacitor-cordova-ios-plugins';
 
   return {
     name,
@@ -245,12 +246,12 @@ async function loadIOSConfig(
     platformDirAbs,
     cordovaPluginsDir,
     cordovaPluginsDirAbs: resolve(platformDirAbs, cordovaPluginsDir),
-    nativeProjectDir,
-    nativeProjectDirAbs: resolve(platformDirAbs, nativeProjectDir),
-    nativeTargetDir,
-    nativeTargetDirAbs: resolve(platformDirAbs, nativeTargetDir),
-    webDir,
-    webDirAbs: resolve(platformDirAbs, webDir),
+    nativeProjectDir: lazy(() => nativeProjectDir),
+    nativeProjectDirAbs: lazy(() => resolve(platformDirAbs, nativeProjectDir)),
+    nativeTargetDir: lazy(() => nativeTargetDir),
+    nativeTargetDirAbs: lazy(() => resolve(platformDirAbs, nativeTargetDir)),
+    webDir: lazy(() => webDir),
+    webDirAbs: lazy(() => resolve(platformDirAbs, webDir)),
     podPath,
   };
 }

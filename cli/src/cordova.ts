@@ -127,7 +127,7 @@ export async function copyPluginsJS(
   cordovaPlugins: Plugin[],
   platform: string,
 ): Promise<void> {
-  const webDir = getWebDir(config, platform);
+  const webDir = await getWebDir(config, platform);
   const pluginsDir = join(webDir, 'plugins');
   const cordovaPluginsJSFile = join(webDir, 'cordova_plugins.js');
   await removePluginFiles(config, platform);
@@ -188,22 +188,28 @@ export async function copyCordovaJS(
     );
   }
 
-  return copy(cordovaPath, join(getWebDir(config, platform), 'cordova.js'));
+  return copy(
+    cordovaPath,
+    join(await getWebDir(config, platform), 'cordova.js'),
+  );
 }
 
 export async function createEmptyCordovaJS(
   config: Config,
   platform: string,
 ): Promise<void> {
-  await writeFile(join(getWebDir(config, platform), 'cordova.js'), '');
-  await writeFile(join(getWebDir(config, platform), 'cordova_plugins.js'), '');
+  await writeFile(join(await getWebDir(config, platform), 'cordova.js'), '');
+  await writeFile(
+    join(await getWebDir(config, platform), 'cordova_plugins.js'),
+    '',
+  );
 }
 
 export async function removePluginFiles(
   config: Config,
   platform: string,
 ): Promise<void> {
-  const webDir = getWebDir(config, platform);
+  const webDir = await getWebDir(config, platform);
   const pluginsDir = join(webDir, 'plugins');
   const cordovaPluginsJSFile = join(webDir, 'cordova_plugins.js');
   await remove(pluginsDir);
@@ -218,7 +224,7 @@ export async function autoGenerateConfig(
   let xmlDir = join(config.android.resDirAbs, 'xml');
   const fileName = 'config.xml';
   if (platform === 'ios') {
-    xmlDir = config.ios.nativeTargetDirAbs;
+    xmlDir = await config.ios.nativeTargetDirAbs;
   }
   await ensureDir(xmlDir);
   const cordovaConfigXMLFile = join(xmlDir, fileName);
@@ -270,7 +276,7 @@ export async function autoGenerateConfig(
   await writeFile(cordovaConfigXMLFile, content);
 }
 
-function getWebDir(config: Config, platform: string): string {
+async function getWebDir(config: Config, platform: string): Promise<string> {
   if (platform === 'ios') {
     return config.ios.webDirAbs;
   }
@@ -285,7 +291,7 @@ export async function handleCordovaPluginsJS(
   config: Config,
   platform: string,
 ): Promise<void> {
-  if (!(await pathExists(getWebDir(config, platform)))) {
+  if (!(await pathExists(await getWebDir(config, platform)))) {
     await copyTask(config, platform);
   }
   if (cordovaPlugins.length > 0) {
@@ -334,7 +340,7 @@ export async function logCordovaManualSteps(
 }
 
 async function logiOSPlist(configElement: any, config: Config, plugin: Plugin) {
-  const plistPath = resolve(config.ios.nativeTargetDirAbs, 'Info.plist');
+  const plistPath = resolve(await config.ios.nativeTargetDirAbs, 'Info.plist');
   const xmlMeta = await readXML(plistPath);
   const data = await readFile(plistPath, { encoding: 'utf-8' });
   const plistData = plist.parse(data) as PlistObject;
