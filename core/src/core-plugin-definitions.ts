@@ -1183,6 +1183,7 @@ export interface LocalNotificationSchedule {
   on?: {
     year?: number;
     month?: number;
+    weekday?: number;
     day?: number;
     hour?: number;
     minute?: number;
